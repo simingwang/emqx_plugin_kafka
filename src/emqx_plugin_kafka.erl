@@ -270,7 +270,7 @@ kafka_init(_Env) ->
   ?LOG_INFO("[KAFKA PLUGIN]KafkaTopic = ~s~n", [KafkaTopic]),
   {ok, _} = application:ensure_all_started(brod),
   ok = brod:start_client(AddressList, emqx_repost_worker, KafkaConfig),
-  ok = brod:start_producer(emqx_repost_worker, KafkaTopic, []),
+  %%ok = brod:start_producer(emqx_repost_worker, KafkaTopic, []),
   ?LOG_INFO("Init emqx plugin kafka successfully.....~n"),
   ok.
 
