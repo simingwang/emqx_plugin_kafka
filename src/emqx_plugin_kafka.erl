@@ -268,9 +268,15 @@ kafka_init(_Env) ->
   ?LOG_INFO("[KAFKA PLUGIN]KafkaConfig = ~p~n", [KafkaConfig]),
   {ok, KafkaTopic} = application:get_env(emqx_plugin_kafka, topic),
   ?LOG_INFO("[KAFKA PLUGIN]KafkaTopic = ~s~n", [KafkaTopic]),
-  {ok, _} = application:ensure_all_started(brod),
-  ok = brod:start_client(AddressList, emqx_repost_worker, KafkaConfig),
+  %%{ok, _} = application:ensure_all_started(brod),
+  %%ok = brod:start_client(AddressList, emqx_repost_worker, KafkaConfig),
   %%ok = brod:start_producer(emqx_repost_worker, KafkaTopic, []),
+  {ok, _} = application:ensure_all_started(brod),
+  %%KafkaBootstrapEndpoints = [{"192.168.0.4", 9092}],
+  Topic = list_to_binary(KafkaTopic),
+  %%KafkaBootstrapEndpoints = [{"192.168.0.4", 9092},{"192.168.0.4", 9093},{"192.168.0.4", 9094}],
+  ok = brod:start_client(AddressList, client1),
+  ok = brod:start_producer(client1,Topic, _ProducerConfig = []),
   ?LOG_INFO("Init emqx plugin kafka successfully.....~n"),
   ok.
 
@@ -328,12 +334,14 @@ unload() ->
   emqx:unhook('message.dropped', {?MODULE, on_message_dropped}).
 
 produce_kafka_payload(Key, Message) ->
-  Topic = get_kafka_topic(),
+  Topic = list_to_binary(get_kafka_topic()),
   {ok, MessageBody} = emqx_json:safe_encode(Message),
-  % ?LOG_INFO("[KAFKA PLUGIN]Message = ~s~n",[MessageBody]),
+  ?LOG_INFO("[KAFKA PLUGIN]Message = ~s~n",[MessageBody]),
+  ?LOG_INFO("[KAFKA PLUGIN]Topic = ~s~n",[Topic]),
   Payload = iolist_to_binary(MessageBody),
-  brod:produce_cb(emqx_repost_worker, Topic, hash, Key, Payload, fun(_,_) -> ok end),
-  ok.
+  %%brod:produce_cb(client1, Topic, hash, Key, Payload, fun(_,_) -> ok end),
+  AckCb = fun(Partition, BaseOffset) -> io:format(user, "\nProduced to partition ~p at base-offset ~p\n", [Partition, BaseOffset]) end,
+  ok = brod:produce_cb(client1, Topic, hash, Key, Payload, AckCb).
 
 ntoa({0, 0, 0, 0, 0, 16#ffff, AB, CD}) ->
   inet_parse:ntoa({AB bsr 8, AB rem 256, CD bsr 8, CD rem 256});

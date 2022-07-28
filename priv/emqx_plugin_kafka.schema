@@ -24,5 +24,5 @@
   end,
   Servers = cuttlefish:conf_get("kafka.config.address.list", Conf),
   S = string:tokens(Servers, ","),
-  Server = [Fun(S1) || S1 <- S]
+  [Fun(S1) || S1 <- S]
 end}.
